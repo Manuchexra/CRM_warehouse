@@ -6,13 +6,13 @@ WORKDIR /app
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Backend kodini nusxalash
-COPY backend/ ./backend/
+# Backend kodini nusxalash - BUTUN backend papkasini emas, faqat app papkasini
+COPY backend/app ./app
 
-# Frontend statik fayllarni nusxalash (HTML, CSS, JS va boshqalar)
-COPY frontend/ ./static/
+# Frontend statik fayllarni nusxalash
+COPY frontend ./static
 
-# FastAPI da statik fayllarni serve qilish uchun (quyida main.py ga o‘zgartirish kiritamiz)
 EXPOSE 8000
 
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# ASGI server: app.main:app (chunki biz ./app papkasiga ko‘chirdik)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
