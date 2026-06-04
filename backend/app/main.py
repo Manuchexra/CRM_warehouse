@@ -8,6 +8,7 @@ from .routers import (
     erp_router, wms_router, reports_router
 )
 import os
+from pathlib import Path
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -23,7 +24,7 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Frontend URLs
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,30 +38,45 @@ app.include_router(erp_router)
 app.include_router(wms_router)
 app.include_router(reports_router)
 
+# --- Statik frontend (HTML/CSS/JS) ---
+# Konteyner ichida /app/static papkasiga ishora
+static_dir = Path(__file__).parent / "static"
 
-# 1. Aniq route’lar
-@app.get("/")
-async def root():
-    index_path = os.path.join(static_dir, "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    return {"message": "API is running", "docs": "/docs"}
+if static_dir.exists() and static_dir.is_dir():
+    # CSS papkasini ulash
+    css_dir = static_dir / "css"
+    if css_dir.exists() and css_dir.is_dir():
+        app.mount("/css", StaticFiles(directory=str(css_dir)), name="css")
+    
+    # JS papkasini ulash
+    js_dir = static_dir / "js"
+    if js_dir.exists() and js_dir.is_dir():
+        app.mount("/js", StaticFiles(directory=str(js_dir)), name="js")
+    
+    # Asosiy sahifa
+    @app.get("/", include_in_schema=False)
+    async def root_html():
+        index_path = static_dir / "index.html"
+        if index_path.exists() and index_path.is_file():
+            return FileResponse(index_path)
+        return {"message": "API ishlayapti", "docs": "/docs", "version": "1.0.0"}
+    
+    # Boshqa statik fayllar (masalan, about.html, images)
+    @app.get("/{file_path:path}")
+    async def serve_static_file(file_path: str):
+        full_path = static_dir / file_path
+        if full_path.exists() and full_path.is_file():
+            return FileResponse(full_path)
+        return {"error": "Not found"}, 404
+else:
+    @app.get("/")
+    def root():
+        return {
+            "message": "Wholesale Clothing Management Platform API",
+            "docs": "/docs",
+            "version": "1.0.0"
+        }
 
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
-
-# 2. Statik fayllar uchun mount (css, js)
-if os.path.exists(os.path.join(static_dir, "css")):
-    app.mount("/css", StaticFiles(directory=os.path.join(static_dir, "css")), name="css")
-if os.path.exists(os.path.join(static_dir, "js")):
-    app.mount("/js", StaticFiles(directory=os.path.join(static_dir, "js")), name="js")
-
-# 3. Catch-all route (faqat fayllar uchun)
-@app.get("/{file_path:path}")
-async def serve_static_file(file_path: str):
-    full_path = os.path.join(static_dir, file_path)
-    if os.path.isfile(full_path):
-        return FileResponse(full_path)
-    # Agar fayl bo‘lmasa, 404 qaytar (yoki index.html – SPA bo‘lsa)
-    return {"error": "Not found"}, 404
