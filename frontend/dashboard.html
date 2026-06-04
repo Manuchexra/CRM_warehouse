@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Wholesale Platform</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+<!-- ── Sidebar ─────────────────────────────────────────────────────────── -->
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">🏬</div>
+        <div>
+            <h2>Wholesale</h2>
+            <span>ERP Platform</span>
+        </div>
+    </div>
+
+    <p class="nav-section-title">Asosiy</p>
+    <nav>
+        <a href="dashboard.html" class="nav-link active">
+            <i data-lucide="layout-dashboard"></i> Dashboard
+        </a>
+        <a href="crm.html" class="nav-link">
+            <i data-lucide="users"></i> CRM – Mijozlar
+        </a>
+        <a href="erp.html" class="nav-link">
+            <i data-lucide="shopping-cart"></i> ERP – Buyurtmalar
+        </a>
+        <a href="wms.html" class="nav-link">
+            <i data-lucide="package"></i> WMS – Ombor
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="top-bar-user" style="margin-bottom:0.75rem;">
+            <div class="user-avatar" id="user-avatar">A</div>
+            <div>
+                <div class="top-bar-user-name" id="user-name">Admin</div>
+                <div class="top-bar-user-role" id="user-role"></div>
+            </div>
+        </div>
+        <button onclick="logout()" class="btn btn-danger btn-full btn-sm">
+            <i data-lucide="log-out"></i> Chiqish
+        </button>
+    </div>
+</div>
+
+<!-- ── Main Content ────────────────────────────────────────────────────── -->
+<div class="main-content">
+    <div class="page-header">
+        <div>
+            <h1>Boshqaruv paneli</h1>
+            <p>Tizimning umumiy holati va statistika</p>
+        </div>
+        <button onclick="loadDashboard()" class="btn btn-secondary btn-sm">
+            <i data-lucide="refresh-cw"></i> Yangilash
+        </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid gap-4" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1.5rem;">
+        <div class="card stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-value" id="stats-orders">—</div>
+                    <div class="stat-label">Jami buyurtmalar</div>
+                </div>
+                <div class="stat-icon gold"><i data-lucide="shopping-cart"></i></div>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-value" id="stats-customers">—</div>
+                    <div class="stat-label">Mijozlar</div>
+                </div>
+                <div class="stat-icon green"><i data-lucide="users"></i></div>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-value" id="stats-products">—</div>
+                    <div class="stat-label">Mahsulotlar</div>
+                </div>
+                <div class="stat-icon"><i data-lucide="package"></i></div>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-value" id="stats-revenue">—</div>
+                    <div class="stat-label">Jami tushum</div>
+                </div>
+                <div class="stat-icon gold"><i data-lucide="trending-up"></i></div>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-value" id="stats-lowstock" style="color: var(--danger);">—</div>
+                    <div class="stat-label">Kam qolgan tovar</div>
+                </div>
+                <div class="stat-icon red"><i data-lucide="alert-triangle"></i></div>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-value" id="stats-recent">—</div>
+                    <div class="stat-label">So'nggi 7 kunda</div>
+                </div>
+                <div class="stat-icon green"><i data-lucide="calendar"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tables -->
+    <div class="grid gap-4" style="grid-template-columns: 2fr 1fr;">
+        <div class="card">
+            <h3 style="font-family: 'Playfair Display', serif; margin-bottom: 0.25rem;">So'nggi buyurtmalar</h3>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.5rem;">Oxirgi 5 ta buyurtma</p>
+            <table id="recent-orders-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Mijoz</th>
+                        <th>Sana</th>
+                        <th>Summa</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Yuklanmoqda...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3 style="font-family: 'Playfair Display', serif; margin-bottom: 0.25rem;">Kam qolgan tovarlar</h3>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.5rem;">10 ta dan kam qolganlar</p>
+            <div id="low-stock-list"></div>
+        </div>
+    </div>
+
+    <!-- Orders by status -->
+    <div class="card mt-4">
+        <h3 style="font-family: 'Playfair Display', serif; margin-bottom: 1rem;">Buyurtmalar holati bo'yicha</h3>
+        <div id="status-breakdown" class="grid gap-4" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));"></div>
+    </div>
+</div>
+
+<div id="notification-container"></div>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+    lucide.createIcons();
+
+    async function loadDashboard() {
+        try {
+            const stats = await API.getDashboardStats();
+
+            document.getElementById('stats-orders').textContent    = stats.total_orders;
+            document.getElementById('stats-customers').textContent  = stats.total_customers;
+            document.getElementById('stats-products').textContent   = stats.total_products;
+            document.getElementById('stats-revenue').textContent    = formatMoney(stats.total_revenue);
+            document.getElementById('stats-lowstock').textContent   = stats.low_stock_items;
+            document.getElementById('stats-recent').textContent     = stats.recent_orders;
+
+            // Orders by status breakdown
+            const statusEl = document.getElementById('status-breakdown');
+            const statusLabels = { pending: 'Kutilmoqda', confirmed: 'Tasdiqlangan', processing: 'Jarayonda', shipped: 'Yuborildi', delivered: 'Yetkazildi', cancelled: 'Bekor' };
+            statusEl.innerHTML = Object.entries(stats.orders_by_status || {}).map(([s, c]) => `
+                <div style="text-align:center; padding: 0.75rem; background: var(--bg-dark); border-radius: 0.75rem; border: 1px solid var(--border);">
+                    <div style="font-size:1.5rem; font-family:'Playfair Display',serif; font-weight:700;">${c}</div>
+                    <div style="font-size:0.75rem; color: var(--text-muted); margin-top:0.2rem;">${statusLabels[s] || s}</div>
+                </div>
+            `).join('');
+
+            // Recent orders — fetch separately
+            const orders = await API.getOrders();
+            const tbody = document.querySelector('#recent-orders-table tbody');
+            const recent = orders.slice(0, 5);
+            tbody.innerHTML = recent.length === 0
+                ? '<tr><td colspan="5" class="empty-state"><p>Buyurtmalar yo\'q</p></td></tr>'
+                : recent.map(o => `
+                    <tr>
+                        <td><strong>#ORD-${o.id}</strong></td>
+                        <td>${o.customer ? o.customer.company_name : '—'}</td>
+                        <td>${formatDate(o.order_date)}</td>
+                        <td>${formatMoney(o.total_amount)}</td>
+                        <td>${statusBadge(o.status)}</td>
+                    </tr>
+                `).join('');
+
+            // Low stock
+            const lowStock = await API.getLowStock(10);
+            const lowEl = document.getElementById('low-stock-list');
+            lowEl.innerHTML = lowStock.length === 0
+                ? '<p style="color:var(--text-muted);font-size:0.875rem;padding:1rem 0;">Hamma narsa yetarli ✓</p>'
+                : lowStock.map(i => `
+                    <div class="stock-item">
+                        <span class="stock-item-name">${i.product_name}</span>
+                        <span class="stock-item-qty">${i.stock_quantity} ta</span>
+                    </div>
+                `).join('');
+
+            lucide.createIcons();
+        } catch (err) {
+            console.error(err);
+            showNotification('Dashboard ma\'lumotlarini yuklashda xatolik: ' + err.message, 'error');
+        }
+    }
+
+    loadDashboard();
+</script>
+</body>
+</html>

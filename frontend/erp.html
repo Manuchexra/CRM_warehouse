@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP – Buyurtmalar | Wholesale Platform</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+<!-- ── Sidebar ─────────────────────────────────────────────────────────── -->
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">🏬</div>
+        <div><h2>Wholesale</h2><span>ERP Platform</span></div>
+    </div>
+    <p class="nav-section-title">Asosiy</p>
+    <nav>
+        <a href="dashboard.html" class="nav-link"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+        <a href="crm.html" class="nav-link"><i data-lucide="users"></i> CRM – Mijozlar</a>
+        <a href="erp.html" class="nav-link active"><i data-lucide="shopping-cart"></i> ERP – Buyurtmalar</a>
+        <a href="wms.html" class="nav-link"><i data-lucide="package"></i> WMS – Ombor</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="top-bar-user" style="margin-bottom:0.75rem;">
+            <div class="user-avatar" id="user-avatar">A</div>
+            <div>
+                <div class="top-bar-user-name" id="user-name">Admin</div>
+                <div class="top-bar-user-role" id="user-role"></div>
+            </div>
+        </div>
+        <button onclick="logout()" class="btn btn-danger btn-full btn-sm">
+            <i data-lucide="log-out"></i> Chiqish
+        </button>
+    </div>
+</div>
+
+<!-- ── Main Content ────────────────────────────────────────────────────── -->
+<div class="main-content">
+    <div class="page-header">
+        <div>
+            <h1>Buyurtmalar – ERP</h1>
+            <p>Sotuv va buyurtmalarni boshqarish</p>
+        </div>
+        <div class="flex gap-4 items-center">
+            <select id="status-filter" onchange="loadOrders()" style="width:auto; padding: 0.6rem 1rem;">
+                <option value="">Barcha statuslar</option>
+                <option value="pending">Kutilmoqda</option>
+                <option value="confirmed">Tasdiqlangan</option>
+                <option value="processing">Jarayonda</option>
+                <option value="shipped">Yuborildi</option>
+                <option value="delivered">Yetkazildi</option>
+                <option value="cancelled">Bekor</option>
+            </select>
+            <button onclick="openCreateOrder()" class="btn btn-primary">
+                <i data-lucide="plus"></i> Yangi buyurtma
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <table id="orders-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Mijoz</th>
+                    <th>Sana</th>
+                    <th>Summa</th>
+                    <th>Status</th>
+                    <th>Amallar</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Yuklanmoqda...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ── Create Order Modal ──────────────────────────────────────────────── -->
+<div class="modal-overlay" id="order-modal">
+    <div class="modal" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3>Yangi buyurtma</h3>
+            <button class="modal-close" onclick="closeModal('order-modal')">✕</button>
+        </div>
+
+        <div class="form-group">
+            <label>Mijoz *</label>
+            <select id="order-customer">
+                <option value="">Mijozni tanlang...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Izoh</label>
+            <textarea id="order-notes" rows="2" placeholder="Qo'shimcha ma'lumot..." style="resize:vertical;"></textarea>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.75rem;">
+                <label style="margin:0;">Mahsulotlar *</label>
+                <button onclick="addOrderItem()" class="btn btn-secondary btn-sm">
+                    <i data-lucide="plus"></i> Qo'shish
+                </button>
+            </div>
+            <div id="order-items">
+                <!-- Items added dynamically -->
+            </div>
+        </div>
+
+        <div style="background: var(--bg-dark); padding: 0.875rem 1rem; border-radius: 0.625rem; border: 1px solid var(--border-gold);">
+            <div style="display:flex; justify-content:space-between;">
+                <span style="font-weight:600;">Jami:</span>
+                <span id="order-total" style="font-weight:700; color:var(--primary); font-family:'Playfair Display',serif; font-size:1.1rem;">$0</span>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button onclick="closeModal('order-modal')" class="btn btn-secondary">Bekor qilish</button>
+            <button onclick="saveOrder()" class="btn btn-primary" id="save-order-btn">
+                <i data-lucide="save"></i> Yaratish
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Status Update Modal ─────────────────────────────────────────────── -->
+<div class="modal-overlay" id="status-modal">
+    <div class="modal" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3>Status yangilash</h3>
+            <button class="modal-close" onclick="closeModal('status-modal')">✕</button>
+        </div>
+        <p style="color:var(--text-muted); margin-bottom:1rem;">
+            Buyurtma <strong id="status-order-id" style="color:var(--primary);"></strong> uchun yangi statusni tanlang:
+        </p>
+        <div class="form-group">
+            <label>Yangi status</label>
+            <select id="new-status">
+                <option value="pending">Kutilmoqda</option>
+                <option value="confirmed">Tasdiqlangan</option>
+                <option value="processing">Jarayonda</option>
+                <option value="shipped">Yuborildi</option>
+                <option value="delivered">Yetkazildi</option>
+                <option value="cancelled">Bekor</option>
+            </select>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeModal('status-modal')" class="btn btn-secondary">Bekor qilish</button>
+            <button onclick="confirmStatusUpdate()" class="btn btn-primary">Saqlash</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Delete Order Modal ──────────────────────────────────────────────── -->
+<div class="modal-overlay" id="delete-order-modal">
+    <div class="modal" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3>Buyurtmani o'chirish</h3>
+            <button class="modal-close" onclick="closeModal('delete-order-modal')">✕</button>
+        </div>
+        <p style="color:var(--text-muted);">
+            <strong id="delete-order-id" style="color:var(--text-main);"></strong> buyurtmasini o'chirishni tasdiqlaysizmi?
+        </p>
+        <p style="color:var(--danger); font-size:0.85rem; margin-top:0.5rem;">Bu amalni qaytarib bo'lmaydi.</p>
+        <div class="modal-footer">
+            <button onclick="closeModal('delete-order-modal')" class="btn btn-secondary">Bekor qilish</button>
+            <button onclick="confirmDeleteOrder()" class="btn btn-danger"><i data-lucide="trash-2"></i> O'chirish</button>
+        </div>
+    </div>
+</div>
+
+<div id="notification-container"></div>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+    lucide.createIcons();
+
+    let allProducts = [];
+    let orderItemCount = 0;
+    let statusTargetId = null;
+    let deleteTargetId = null;
+
+    // ── Load orders ───────────────────────────────────────────────────────
+    async function loadOrders() {
+        const status = document.getElementById('status-filter').value;
+        const tbody = document.querySelector('#orders-table tbody');
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Yuklanmoqda...</td></tr>';
+        try {
+            const orders = await API.getOrders(status);
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>Buyurtmalar topilmadi</p></div></td></tr>';
+                return;
+            }
+            tbody.innerHTML = orders.map(o => `
+                <tr>
+                    <td><strong style="color:var(--primary);">#ORD-${o.id}</strong></td>
+                    <td>${o.customer ? o.customer.company_name : '—'}</td>
+                    <td>${formatDate(o.order_date)}</td>
+                    <td><strong>${formatMoney(o.total_amount)}</strong></td>
+                    <td>${statusBadge(o.status)}</td>
+                    <td>
+                        <div class="actions">
+                            <button class="btn btn-icon" onclick="promptStatusUpdate(${o.id}, '${o.status}')" title="Statusni o'zgartirish"><i data-lucide="edit-2"></i></button>
+                            <button class="btn btn-icon" style="color:var(--danger); border-color:rgba(224,92,92,0.3);" onclick="promptDeleteOrder(${o.id})" title="O'chirish"><i data-lucide="trash-2"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--danger);">Xatolik: ${err.message}</td></tr>`;
+        }
+    }
+
+    // ── Open create order (load customers + products) ─────────────────────
+    async function openCreateOrder() {
+        orderItemCount = 0;
+        document.getElementById('order-items').innerHTML = '';
+        document.getElementById('order-notes').value = '';
+        document.getElementById('order-total').textContent = '$0';
+
+        // Load customers
+        try {
+            const customers = await API.getCustomers();
+            const sel = document.getElementById('order-customer');
+            sel.innerHTML = '<option value="">Mijozni tanlang...</option>' +
+                customers.map(c => `<option value="${c.id}">${c.company_name}</option>`).join('');
+        } catch (_) {}
+
+        // Load products
+        try {
+            allProducts = await API.getProducts();
+        } catch (_) { allProducts = []; }
+
+        addOrderItem();
+        openModal('order-modal');
+    }
+
+    // ── Add item row ──────────────────────────────────────────────────────
+    function addOrderItem() {
+        const idx = orderItemCount++;
+        const container = document.getElementById('order-items');
+        const row = document.createElement('div');
+        row.id = `item-${idx}`;
+        row.style.cssText = 'display:grid; grid-template-columns:1fr 100px auto; gap:0.5rem; margin-bottom:0.5rem; align-items:center;';
+        row.innerHTML = `
+            <select id="product-${idx}" onchange="recalcTotal()" style="flex:1;">
+                <option value="">Mahsulot tanlang...</option>
+                ${allProducts.map(p => `<option value="${p.id}" data-price="${p.unit_price}">${p.name} (${formatMoney(p.unit_price)})</option>`).join('')}
+            </select>
+            <input type="number" id="qty-${idx}" min="1" value="1" oninput="recalcTotal()" placeholder="Soni" style="text-align:center;">
+            <button class="btn btn-icon" style="color:var(--danger);" onclick="removeItem(${idx})"><i data-lucide="x"></i></button>
+        `;
+        container.appendChild(row);
+        lucide.createIcons();
+    }
+
+    function removeItem(idx) {
+        document.getElementById(`item-${idx}`)?.remove();
+        recalcTotal();
+    }
+
+    function recalcTotal() {
+        let total = 0;
+        document.querySelectorAll('[id^="product-"]').forEach(sel => {
+            const idx = sel.id.split('-')[1];
+            const opt = sel.selectedOptions[0];
+            const price = parseFloat(opt?.dataset.price || 0);
+            const qty = parseFloat(document.getElementById(`qty-${idx}`)?.value || 1);
+            total += price * qty;
+        });
+        document.getElementById('order-total').textContent = formatMoney(total);
+    }
+
+    // ── Save order ────────────────────────────────────────────────────────
+    async function saveOrder() {
+        const customerId = document.getElementById('order-customer').value;
+        const notes = document.getElementById('order-notes').value.trim();
+        if (!customerId) { showNotification('Mijozni tanlang', 'error'); return; }
+
+        const items = [];
+        document.querySelectorAll('[id^="product-"]').forEach(sel => {
+            const idx = sel.id.split('-')[1];
+            const productId = parseInt(sel.value);
+            const qty = parseInt(document.getElementById(`qty-${idx}`)?.value || 0);
+            if (productId && qty > 0) {
+                items.push({ product_id: productId, quantity: qty });
+            }
+        });
+
+        if (items.length === 0) { showNotification('Kamida bitta mahsulot qo\'shing', 'error'); return; }
+
+        const btn = document.getElementById('save-order-btn');
+        btn.disabled = true; btn.textContent = 'Yaratilmoqda...';
+
+        try {
+            await API.createOrder({ customer_id: parseInt(customerId), notes: notes || null, items });
+            showNotification('Buyurtma muvaffaqiyatli yaratildi!', 'success');
+            closeModal('order-modal');
+            loadOrders();
+        } catch (err) {
+            showNotification('Xatolik: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="save"></i> Yaratish';
+            lucide.createIcons();
+        }
+    }
+
+    // ── Status update ─────────────────────────────────────────────────────
+    function promptStatusUpdate(id, currentStatus) {
+        statusTargetId = id;
+        document.getElementById('status-order-id').textContent = `#ORD-${id}`;
+        document.getElementById('new-status').value = currentStatus;
+        openModal('status-modal');
+    }
+
+    async function confirmStatusUpdate() {
+        const status = document.getElementById('new-status').value;
+        try {
+            await API.updateOrderStatus(statusTargetId, status);
+            showNotification('Status yangilandi', 'success');
+            closeModal('status-modal');
+            loadOrders();
+        } catch (err) {
+            showNotification('Xatolik: ' + err.message, 'error');
+        }
+    }
+
+    // ── Delete order ──────────────────────────────────────────────────────
+    function promptDeleteOrder(id) {
+        deleteTargetId = id;
+        document.getElementById('delete-order-id').textContent = `#ORD-${id}`;
+        openModal('delete-order-modal');
+    }
+
+    async function confirmDeleteOrder() {
+        try {
+            await API.deleteOrder(deleteTargetId);
+            showNotification('Buyurtma o\'chirildi', 'info');
+            closeModal('delete-order-modal');
+            loadOrders();
+        } catch (err) {
+            showNotification('Xatolik: ' + err.message, 'error');
+        }
+    }
+
+    loadOrders();
+</script>
+</body>
+</html>
