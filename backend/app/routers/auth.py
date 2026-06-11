@@ -13,11 +13,6 @@ from ..models.user import User
 from ..schemas.user import UserCreate, UserResponse
 from ..schemas.token import Token, TokenRefresh
 
-from .. import models
-from ..core.database import get_db
-from ..core import security
-from ..schemas import Token
-
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
