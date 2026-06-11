@@ -16,11 +16,8 @@
         <div><h2>Wholesale</h2><span>ERP Platform</span></div>
     </div>
     <p class="nav-section-title">Asosiy</p>
-    <nav>
-        <a href="dashboard.html" class="nav-link"><i data-lucide="layout-dashboard"></i> Dashboard</a>
-        <a href="crm.html" class="nav-link"><i data-lucide="users"></i> CRM – Mijozlar</a>
-        <a href="erp.html" class="nav-link"><i data-lucide="shopping-cart"></i> ERP – Buyurtmalar</a>
-        <a href="wms.html" class="nav-link active"><i data-lucide="package"></i> WMS – Ombor</a>
+    <nav id="sidebar-nav">
+        <!-- Dynamic navigation based on user role -->
     </nav>
     <div class="sidebar-footer">
         <div class="top-bar-user" style="margin-bottom:0.75rem;">
@@ -48,7 +45,7 @@
                 <i data-lucide="search"></i>
                 <input type="text" id="category-filter" placeholder="Kategoriya bo'yicha..." oninput="onCategoryFilter(this.value)">
             </div>
-            <button onclick="openCreateProduct()" class="btn btn-primary">
+            <button onclick="openCreateProduct()" class="btn btn-primary" id="btn-create-product" style="display:none;">
                 <i data-lucide="plus"></i> Yangi mahsulot
             </button>
         </div>
@@ -192,6 +189,11 @@
 <script>
     lucide.createIcons();
 
+    // Show create button only for users with write access
+    if (canWrite('wms')) {
+        document.getElementById('btn-create-product').style.display = '';
+    }
+
     let deleteProductId = null;
     let catFilterTimeout = null;
     let currentTab = 'inventory';
@@ -227,12 +229,20 @@
                 return;
             }
 
+            const _canWriteWms = canWrite('wms');
             tbody.innerHTML = products.map(p => {
                 const inv = inventory.find(i => i.product_id === p.id) || { stock_quantity: 0, reserved_quantity: 0, available_quantity: 0 };
                 const isLow = inv.stock_quantity < 20;
                 const isOut = inv.stock_quantity <= 0;
                 const badgeClass = isOut ? 'badge-danger' : isLow ? 'badge-warning' : 'badge-success';
                 const badgeLabel = isOut ? 'Tugagan' : isLow ? 'Kam qolgan' : 'Yetarli';
+                const actionHtml = _canWriteWms
+                    ? `<td>
+                            <button class="btn btn-icon" onclick="openInventoryUpdate(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${inv.stock_quantity})" title="Miqdorni yangilash">
+                                <i data-lucide="edit-2"></i>
+                            </button>
+                        </td>`
+                    : '<td></td>';
                 return `
                     <tr>
                         <td><strong>${p.name}</strong></td>
@@ -242,11 +252,7 @@
                         <td style="color:var(--warning);">${inv.reserved_quantity || 0}</td>
                         <td style="color:var(--success);">${inv.available_quantity ?? (inv.stock_quantity - (inv.reserved_quantity || 0))}</td>
                         <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
-                        <td>
-                            <button class="btn btn-icon" onclick="openInventoryUpdate(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${inv.stock_quantity})" title="Miqdorni yangilash">
-                                <i data-lucide="edit-2"></i>
-                            </button>
-                        </td>
+                        ${actionHtml}
                     </tr>
                 `;
             }).join('');
@@ -266,20 +272,25 @@
                 tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><p>Mahsulotlar topilmadi</p></div></td></tr>';
                 return;
             }
-            tbody.innerHTML = products.map(p => `
+            const _canWriteWms2 = canWrite('wms');
+            const _canDeleteWms = canDelete('wms');
+            tbody.innerHTML = products.map(p => {
+                let actionsHtml = '';
+                if (_canWriteWms2) {
+                    actionsHtml += `<button class="btn btn-icon" onclick="editProduct(${p.id})" title="Tahrirlash"><i data-lucide="edit-2"></i></button>`;
+                }
+                if (_canDeleteWms) {
+                    actionsHtml += `<button class="btn btn-icon" style="color:var(--danger); border-color:rgba(224,92,92,0.3);" onclick="promptDeleteProduct(${p.id}, '${p.name.replace(/'/g, "\\'")}')" title="O'chirish"><i data-lucide="trash-2"></i></button>`;
+                }
+                return `
                 <tr>
                     <td><strong>${p.name}</strong>${p.description ? `<br><small style="color:var(--text-muted);">${p.description.substring(0,50)}${p.description.length>50?'...':''}</small>` : ''}</td>
                     <td><code>${p.sku}</code></td>
                     <td style="color:var(--text-muted);">${p.category || '—'}</td>
                     <td><strong style="color:var(--primary);">${formatMoney(p.unit_price)}</strong></td>
-                    <td>
-                        <div class="actions">
-                            <button class="btn btn-icon" onclick="editProduct(${p.id})" title="Tahrirlash"><i data-lucide="edit-2"></i></button>
-                            <button class="btn btn-icon" style="color:var(--danger); border-color:rgba(224,92,92,0.3);" onclick="promptDeleteProduct(${p.id}, '${p.name.replace(/'/g, "\\'")}')"><i data-lucide="trash-2"></i></button>
-                        </div>
-                    </td>
+                    ${actionsHtml ? `<td><div class="actions">${actionsHtml}</div></td>` : '<td></td>'}
                 </tr>
-            `).join('');
+            `}).join('');
             lucide.createIcons();
         } catch (err) {
             tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--danger);">Xatolik: ${err.message}</td></tr>`;

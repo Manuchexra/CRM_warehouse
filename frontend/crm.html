@@ -16,11 +16,8 @@
         <div><h2>Wholesale</h2><span>ERP Platform</span></div>
     </div>
     <p class="nav-section-title">Asosiy</p>
-    <nav>
-        <a href="dashboard.html" class="nav-link"><i data-lucide="layout-dashboard"></i> Dashboard</a>
-        <a href="crm.html" class="nav-link active"><i data-lucide="users"></i> CRM – Mijozlar</a>
-        <a href="erp.html" class="nav-link"><i data-lucide="shopping-cart"></i> ERP – Buyurtmalar</a>
-        <a href="wms.html" class="nav-link"><i data-lucide="package"></i> WMS – Ombor</a>
+    <nav id="sidebar-nav">
+        <!-- Dynamic navigation based on user role -->
     </nav>
     <div class="sidebar-footer">
         <div class="top-bar-user" style="margin-bottom:0.75rem;">
@@ -48,7 +45,7 @@
                 <i data-lucide="search"></i>
                 <input type="text" id="search-input" placeholder="Qidirish..." oninput="onSearch(this.value)">
             </div>
-            <button onclick="openModal('customer-modal')" class="btn btn-primary">
+            <button onclick="openModal('customer-modal')" class="btn btn-primary" id="btn-create-customer" style="display:none;">
                 <i data-lucide="plus"></i> Yangi mijoz
             </button>
         </div>
@@ -148,6 +145,11 @@
 <script>
     lucide.createIcons();
 
+    // Show create button only for users with write access
+    if (canWrite('crm')) {
+        document.getElementById('btn-create-customer').style.display = '';
+    }
+
     let deleteTargetId = null;
     let searchTimeout = null;
 
@@ -161,21 +163,26 @@
                 tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>Mijozlar topilmadi</p></div></td></tr>';
                 return;
             }
-            tbody.innerHTML = customers.map(c => `
+            const _canWrite = canWrite('crm');
+            const _canDelete = canDelete('crm');
+            tbody.innerHTML = customers.map(c => {
+                let actionsHtml = '';
+                if (_canWrite) {
+                    actionsHtml += `<button class="btn btn-icon" onclick="editCustomer(${c.id})" title="Tahrirlash"><i data-lucide="edit-2"></i></button>`;
+                }
+                if (_canDelete) {
+                    actionsHtml += `<button class="btn btn-icon" style="color:var(--danger); border-color:rgba(224,92,92,0.3);" onclick="promptDelete(${c.id}, '${c.company_name.replace(/'/g, "\\'")}')" title="O'chirish"><i data-lucide="trash-2"></i></button>`;
+                }
+                return `
                 <tr>
                     <td><strong>${c.company_name}</strong></td>
                     <td>${c.contact_person || '—'}</td>
                     <td>${c.phone || '—'}</td>
                     <td style="color:var(--text-muted);">${c.email || '—'}</td>
                     <td style="color:var(--text-muted); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${c.address || '—'}</td>
-                    <td>
-                        <div class="actions">
-                            <button class="btn btn-icon" onclick="editCustomer(${c.id})" title="Tahrirlash"><i data-lucide="edit-2"></i></button>
-                            <button class="btn btn-icon" style="color:var(--danger); border-color:rgba(224,92,92,0.3);" onclick="promptDelete(${c.id}, '${c.company_name.replace(/'/g, "\\'")}')" title="O'chirish"><i data-lucide="trash-2"></i></button>
-                        </div>
-                    </td>
+                    ${actionsHtml ? `<td><div class="actions">${actionsHtml}</div></td>` : '<td></td>'}
                 </tr>
-            `).join('');
+            `}).join('');
             lucide.createIcons();
         } catch (err) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger);">Xatolik: ' + err.message + '</td></tr>';

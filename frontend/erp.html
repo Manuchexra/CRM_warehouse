@@ -16,11 +16,8 @@
         <div><h2>Wholesale</h2><span>ERP Platform</span></div>
     </div>
     <p class="nav-section-title">Asosiy</p>
-    <nav>
-        <a href="dashboard.html" class="nav-link"><i data-lucide="layout-dashboard"></i> Dashboard</a>
-        <a href="crm.html" class="nav-link"><i data-lucide="users"></i> CRM – Mijozlar</a>
-        <a href="erp.html" class="nav-link active"><i data-lucide="shopping-cart"></i> ERP – Buyurtmalar</a>
-        <a href="wms.html" class="nav-link"><i data-lucide="package"></i> WMS – Ombor</a>
+    <nav id="sidebar-nav">
+        <!-- Dynamic navigation based on user role -->
     </nav>
     <div class="sidebar-footer">
         <div class="top-bar-user" style="margin-bottom:0.75rem;">
@@ -53,7 +50,7 @@
                 <option value="delivered">Yetkazildi</option>
                 <option value="cancelled">Bekor</option>
             </select>
-            <button onclick="openCreateOrder()" class="btn btn-primary">
+            <button onclick="openCreateOrder()" class="btn btn-primary" id="btn-create-order" style="display:none;">
                 <i data-lucide="plus"></i> Yangi buyurtma
             </button>
         </div>
@@ -179,6 +176,11 @@
 <script>
     lucide.createIcons();
 
+    // Show create button only for users with write access
+    if (canWrite('erp')) {
+        document.getElementById('btn-create-order').style.display = '';
+    }
+
     let allProducts = [];
     let orderItemCount = 0;
     let statusTargetId = null;
@@ -195,21 +197,26 @@
                 tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>Buyurtmalar topilmadi</p></div></td></tr>';
                 return;
             }
-            tbody.innerHTML = orders.map(o => `
+            const _canWrite = canWrite('erp');
+            const _canDelete = canDelete('erp');
+            tbody.innerHTML = orders.map(o => {
+                let actionsHtml = '';
+                if (_canWrite) {
+                    actionsHtml += `<button class="btn btn-icon" onclick="promptStatusUpdate(${o.id}, '${o.status}')" title="Statusni o'zgartirish"><i data-lucide="edit-2"></i></button>`;
+                }
+                if (_canDelete) {
+                    actionsHtml += `<button class="btn btn-icon" style="color:var(--danger); border-color:rgba(224,92,92,0.3);" onclick="promptDeleteOrder(${o.id})" title="O'chirish"><i data-lucide="trash-2"></i></button>`;
+                }
+                return `
                 <tr>
                     <td><strong style="color:var(--primary);">#ORD-${o.id}</strong></td>
                     <td>${o.customer ? o.customer.company_name : '—'}</td>
                     <td>${formatDate(o.order_date)}</td>
                     <td><strong>${formatMoney(o.total_amount)}</strong></td>
                     <td>${statusBadge(o.status)}</td>
-                    <td>
-                        <div class="actions">
-                            <button class="btn btn-icon" onclick="promptStatusUpdate(${o.id}, '${o.status}')" title="Statusni o'zgartirish"><i data-lucide="edit-2"></i></button>
-                            <button class="btn btn-icon" style="color:var(--danger); border-color:rgba(224,92,92,0.3);" onclick="promptDeleteOrder(${o.id})" title="O'chirish"><i data-lucide="trash-2"></i></button>
-                        </div>
-                    </td>
+                    ${actionsHtml ? `<td><div class="actions">${actionsHtml}</div></td>` : '<td></td>'}
                 </tr>
-            `).join('');
+            `}).join('');
             lucide.createIcons();
         } catch (err) {
             tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--danger);">Xatolik: ${err.message}</td></tr>`;
